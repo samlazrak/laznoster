@@ -8,7 +8,8 @@ agnoster::set_default AGNOSTER_SEGMENT_SEPARATOR '' \u2502
 agnoster::set_default AGNOSTER_SEGMENT_RSEPARATOR '' \u2502
 
 agnoster::set_default AGNOSTER_ICON_ERROR \u2717
-agnoster::set_default AGNOSTER_ICON_ROOT \u26a1
+agnoster::set_default AGNOSTER_ICON_ROOT \u2713
+agnoster::set_default AGNOSTER_ICON_SUCCESS \u03BB
 agnoster::set_default AGNOSTER_ICON_BGJOBS \u2699
 
 agnoster::set_default AGNOSTER_ICON_SCM_BRANCH \u2387
@@ -38,9 +39,8 @@ end
 function agnoster::context
   set user (whoami)
   set host (hostname)
-
   if [ "$user" != "$DEFAULT_USER" ]; or [ -n "$SSH_CLIENT" ]
-    agnoster::segment black normal "$user@$host "
+    agnoster::segment black bryellow "$user@$host "
   end
 
   if [ ! -z "$IN_NIX_SHELL" ]
@@ -62,9 +62,24 @@ function agnoster::status
   if [ (jobs -l | wc -l) -ne 0 ]
     set icons $icons "$AGNOSTER_ICON_BGJOBS"
   end
-
+  
   if set -q icons
     agnoster::segment black red "$icons "
+  end
+
+  # Put this check after so it'll override the black red segment
+  if [ "$__agnoster_last_status" -eq 0 ]
+    set icons $icons "$AGNOSTER_ICON_SUCCESS"
+    agnoster::segment black yellow "$icons "
+  end
+end
+
+function agnoster::errorstatus
+  if [ "$__agnoster_last_status" -ne 0 ]
+    set icons $icons "$AGNOSTER_ICON_ERROR"
+  end
+  if set -q icons
+    agnoster::segment black red \u2717 "$__agnoster_last_status"
   end
 end
 
@@ -76,7 +91,7 @@ end
 
 function agnoster::git::color
   if command git diff --no-ext-diff --quiet --exit-code
-    echo "green"
+    echo "blue"
   else
     echo "yellow"
   end
@@ -114,7 +129,6 @@ end
 function agnoster::git::staged
   command git diff --cached --no-ext-diff --quiet --exit-code; or echo -n "$AGNOSTER_ICON_SCM_STAGED"
 end
-# }}}
 
 function agnoster::git -d "Display the actual git state"
   agnoster::git::is_repo; or return
@@ -126,16 +140,41 @@ function agnoster::git -d "Display the actual git state"
 
   set -l content "$branch$ahead$staged$stashed"
 
+  set_color yellow; echo -n "$AGNOSTER_SEGMENT_SEPARATOR[2]"
   agnoster::segment (agnoster::git::color) black "$content "
 end
 # }}}
+
+function agnoster::seperator
+  set_color yellow;
+  if test -d .git
+    set_color black;
+  end
+  echo -n "$AGNOSTER_SEGMENT_SEPARATOR[2]"
+  agnoster::segment black yellow "=> "
+end
+
+function agnoster::exectime
+  set exclude_cmd "bash|less|man|more|ssh|fish|ls|cd"
+  set minimum_duration 10000
+  if begin
+    if test $CMD_DURATION -gt $minimum_duration
+      and echo $history[1] | grep -vqE "^($exclude_cmd).*"
+        set duration (echo "$CMD_DURATION 1000" | awk '{printf "%.1fs", $1 / $2}')
+        set_color yellow; echo -n "$AGNOSTER_SEGMENT_SEPARATOR[2]"
+        agnoster::segment yellow black "$duration"
+    end
+   end
+  end
+end
 
 function agnoster::dir -d 'Print current working directory'
   set -l dir (prompt_pwd)
   if set -q AGNOSTER_SEGMENT_SEPARATOR[2]
     set dir (echo "$dir" | sed "s,/,$AGNOSTER_SEGMENT_SEPARATOR[2],g")
   end
-  agnoster::segment blue black "$dir "
+  agnoster::segment cyan black "$dir"
+  set_color black; echo -n "$AGNOSTER_SEGMENT_SEPARATOR[2]"
 end
 
 function agnoster::finish
@@ -147,10 +186,13 @@ end
 function fish_prompt
   set -g __agnoster_last_status $status
 
-  agnoster::status
-  agnoster::context
+  #agnoster::context
   agnoster::dir
+  agnoster::status
   agnoster::git
+  agnoster::seperator
+  agnoster::exectime
+  agnoster::errorstatus
   agnoster::finish
 
   set_color normal
