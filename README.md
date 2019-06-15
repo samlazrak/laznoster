@@ -1,26 +1,28 @@
-# Fish Agnoster theme
+# Fish Laznoster theme
 
-Fancy, colorful theme with support for Powerline fonts.
+Based on https://github.com/hauleth/agnoster
+
+All commands and references to agnoster aren't going to be changed to laznoster because I'm lazy. 
 
 ## Installation
 
 With [Fisher](https://github.com/fisherman/fisherman)
 
-    fisher add hauleth/agnoster
+    fisher add samlazrak/laznoster
 
 With [Fundle](https://github.com/danhper/fundle) add:
 
-    fundle plugin hauleth/agnoster
+    fundle plugin samlazrak/laznoster
     
 to your `config.fish` and run `fundle install`.
 
 ---
 
-Yeah, really. That's it. Be happy with your fancy new theme.
-
 ## Themes
 
 To choose theme run `agnoster <theme>`.
+
+### I haven't used the default theme, it probably looks dumb so use the powerline version.
 
 Available themes:
 
@@ -51,4 +53,4 @@ set -U AGNOSTER_ICON_GIT_REF \u27a6 # unicode heavy black curved upwards and rig
 
 ## Licence
 
-Agnoster is MIT licensed. See [LICENSE](LICENSE) file for details.
+Laznoster is MIT licensed. See [LICENSE](LICENSE) file for details.
